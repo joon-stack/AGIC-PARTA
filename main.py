@@ -5,7 +5,7 @@ from train import *
 
 def parse_args():
 
-  parser = argparse.ArgumentParser(description="SPDS_FinalPJT", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+  parser = argparse.ArgumentParser(description="AGIC-PART A", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument("--batchsize", default=25, type=int, dest="batchsize") 
   parser.add_argument("--epochs", default=50, type=int, dest="epochs")
   parser.add_argument("--train_dir", default="./Dataset-rps-bg/training/", type=str, dest="train_dir") 
