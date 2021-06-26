@@ -2,22 +2,24 @@ import argparse
 import time
 
 from train import *
+from validate import * 
 
 def parse_args():
 
   parser = argparse.ArgumentParser(description="AGIC-PART A", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  parser.add_argument("--batchsize", default=25, type=int, dest="batchsize") 
-  parser.add_argument("--epochs", default=50, type=int, dest="epochs")
-  parser.add_argument("--train_dir", default="./Dataset-rps-bg/training/", type=str, dest="train_dir") 
-  parser.add_argument("--val_dir", default="./Dataset-rps-bg/rps-test-set/", type=str, dest="val_dir")
+  parser.add_argument("--batchsize", default=8, type=int, dest="batchsize") 
+  parser.add_argument("--epochs", default=1000, type=int, dest="epochs")
+  parser.add_argument("--data_dir", default="./data/ROI/", type=str, dest="data_dir") 
+  parser.add_argument("--trainmode", default='train', type=str, dest="trainmode")
+  parser.add_argument("--fold_size", default=4, type=int, dest="fold_size")
   
   return parser.parse_args()
 
 
 def main():
   args = parse_args()
-  # pretrain()
-  train(args)
+  fold_val_set = train(args)
+  validate(fold_val_set)
 
 if __name__ == '__main__':
   since = time.time()
