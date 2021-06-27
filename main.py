@@ -11,7 +11,8 @@ def parse_args():
   parser.add_argument("--epochs", default=1000, type=int, dest="epochs")
   parser.add_argument("--data_dir", default="./data/ROI/", type=str, dest="data_dir") 
   parser.add_argument("--trainmode", default='train', type=str, dest="trainmode")
-  parser.add_argument("--fold_size", default=4, type=int, dest="fold_size")
+  parser.add_argument("--fold_size", default=5, type=int, dest="fold_size")
+  parser.add_argument("--prepare_data_dir", default='./data', type=str, dest="prepare_data_dir")
   
   return parser.parse_args()
 

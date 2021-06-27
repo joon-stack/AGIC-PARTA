@@ -27,18 +27,23 @@ def train(args):
     fold_size = args.fold_size
     earlyStoppingThres = 20
 
-    
-    input_images, input_fnames = prepare_data()
+    input_images, input_fnames = prepare_data('train')
     input_images = np.array(input_images)
     input_fnames = np.array(input_fnames)
     test = input_images[0][:, :, :3]
     cv2.imwrite(input_fnames[0], test)
     target_df = pd.read_csv('./results/output_df.csv', index_col='Unnamed: 0')
+    variety_df = pd.read_csv('./results/variety_df.csv', index_col='Unnamed: 0')
     max_values = target_df.max().values
     min_values = target_df.min().values
     target_df = (target_df - min_values) / (max_values - min_values)
     target_df.to_csv("./results/norm_output_df.csv")
+    img_idx = ['Image'+ s.split("_")[1].split(".")[0] for s in input_fnames]
+    target_df = target_df.loc[img_idx, :]
+    variety_df = variety_df.loc[img_idx, :]
     output_labels = target_df.values
+
+    variety = variety_df['variety']
 
     idx = natsort.index_natsorted(input_fnames)
 
@@ -47,13 +52,15 @@ def train(args):
 
     transform = transforms.Compose([ToTensor()])
 
-    kf = KFold(fold_size, True, random_state=1004)
+    # kf = StratifiedKFold(fold_size, True, random_state=1004)
+    kf = KFold(fold_size, True, random_state=3101)
     fold = 0
     fold_val_set = []
     isTrain = True if args.trainmode == 'train' else False
 
     print("Train mode {}".format(isTrain))
 
+    # for train_idx, val_idx in kf.split(output_labels, variety):
     for train_idx, val_idx in kf.split(output_labels):
         fold += 1
         
@@ -87,7 +94,7 @@ def train(args):
             #     param.requires_grad = False
             model.conv1 = nn.Conv2d(4, 64, kernel_size=7, stride=2, padding=3, bias=False)
             model.fc = nn.Linear(2048, 5, bias=True)
-            model.fc.register_forward_hook(lambda m, inp, out: F.dropout(out, p=0.1, training=m.training))
+            model.fc.register_forward_hook(lambda m, inp, out: F.dropout(out, p=0.05, training=m.training))
 
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             # device = torch.device('cpu')
