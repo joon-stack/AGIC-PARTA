@@ -2,13 +2,48 @@ import cv2
 import numpy as np
 import os
 import natsort
+import copy
 
-def prepare_data(mode):
+def augment(roi, fname, size):
+    path = './data/augment/'
+    if not os.path.exists(path):
+        os.mkdir(path)
+    augmented_images = []
+    augmented_fnames = []
+    for n in range(size):
+        for src, f in zip(roi, fname):
+            p = np.random.rand(1)
+            if p < 0.33:
+                angle = 90
+            elif p < 0.66:
+                angle = 180
+            else:
+                angle = 270
+            h, w = src.shape[:2]
+            rotation = cv2.getRotationMatrix2D((w/2, h/2), angle, 1)
+            dst = cv2.warpAffine(src, rotation, (w, h), borderValue=[0, 0, 0, 0])
+
+            q = np.random.rand(1)
+            if q < 0.5:
+                dst = cv2.flip(dst, 1)
+            else:
+                dst = cv2.flip(dst, 0)
+            f = 'a{}'.format(n) + f
+            augmented_images.append(dst)
+            augmented_fnames.append(f)
+            cv2.imwrite(os.path.join(path, f), dst)
+            
+    return augmented_images, augmented_fnames
+
+        
+
+def prepare_data(mode, augmentation_size=0):
     if mode == 'train':
         p = './data'
+        needAugment = True
     elif mode == 'evaluate':
         p = './evaluation'
-
+        needAugment = False
 
     input_rgb_path = []
     input_depth_path = []
@@ -71,8 +106,8 @@ def prepare_data(mode):
         #     roi = src[int(roi_center[1]) - ROI_SIZE[1] // 2 : int(roi_center[1]) + ROI_SIZE[1] // 2, int(roi_center[0]) - ROI_SIZE[0] // 2 : int(roi_center[0]) + ROI_SIZE[0] // 2]
         #     roi_d = src_d[int(roi_center[1]) - ROI_SIZE[1] // 2 : int(roi_center[1]) + ROI_SIZE[1] // 2, int(roi_center[0]) - ROI_SIZE[0] // 2 : int(roi_center[0]) + ROI_SIZE[0] // 2]
 
-            # roi = src[int(roi_center[1]) - ROI_SIZE[1] // 2 : int(roi_center[1]) + ROI_SIZE[1] // 2, int(roi_center[0]) - ROI_SIZE[0] // 2 : int(roi_center[0]) + ROI_SIZE[0] // 2]
-            # roi_d = src_d[int(roi_center[1]) - ROI_SIZE[1] // 2 : int(roi_center[1]) + ROI_SIZE[1] // 2, int(roi_center[0]) - ROI_SIZE[0] // 2 : int(roi_center[0]) + ROI_SIZE[0] // 2]
+        #     roi = src[int(roi_center[1]) - ROI_SIZE[1] // 2 : int(roi_center[1]) + ROI_SIZE[1] // 2, int(roi_center[0]) - ROI_SIZE[0] // 2 : int(roi_center[0]) + ROI_SIZE[0] // 2]
+        #     roi_d = src_d[int(roi_center[1]) - ROI_SIZE[1] // 2 : int(roi_center[1]) + ROI_SIZE[1] // 2, int(roi_center[0]) - ROI_SIZE[0] // 2 : int(roi_center[0]) + ROI_SIZE[0] // 2]
         src_d = np.interp(src_d, [0, src_d.max()], [0, 255]).astype('uint8')
         center_h, center_w = src_h // 2, src_w // 2
         roi = src[center_h  - ROI_SIZE[1] // 2: center_h + ROI_SIZE[1] // 2, center_w - ROI_SIZE[0] // 2: center_w + ROI_SIZE[0] // 2]
@@ -97,10 +132,17 @@ def prepare_data(mode):
 
         cv2.imwrite(savename, roi_m)
     
-        
+    lettuce_rgb_fnames = copy.copy(input_rgb_fname)
+
+    if needAugment:
+        augmented_images, augmented_fnames = augment(lettuce_rgb_roi, lettuce_rgb_fnames, augmentation_size)
+        lettuce_rgb_roi.extend(augmented_images)
+        lettuce_rgb_fnames.extend(augmented_fnames)
+
     print("Image prepared! ")
-    return lettuce_rgb_roi, input_rgb_fname
+
+    return lettuce_rgb_roi, lettuce_rgb_fnames
 
 
 if __name__ == "__main__":
-    prepare_data()       
+    prepare_data('train')       

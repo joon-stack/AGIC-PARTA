@@ -27,22 +27,35 @@ def train(args):
     fold_size = args.fold_size
     earlyStoppingThres = 20
 
-    input_images, input_fnames = prepare_data('train')
+    augmentation_size = args.augmentation
+
+    input_images, input_fnames= prepare_data('train', augmentation_size)
     input_images = np.array(input_images)
     input_fnames = np.array(input_fnames)
-    test = input_images[0][:, :, :3]
-    cv2.imwrite(input_fnames[0], test)
+    # test = input_images[0][:, :, :3]
+    # cv2.imwrite(input_fnames[0], test)
     target_df = pd.read_csv('./results/output_df.csv', index_col='Unnamed: 0')
     variety_df = pd.read_csv('./results/variety_df.csv', index_col='Unnamed: 0')
+
+    
+
     max_values = target_df.max().values
     min_values = target_df.min().values
     target_df = (target_df - min_values) / (max_values - min_values)
     target_df.to_csv("./results/norm_output_df.csv")
+
+
+    # if augmentation_size > 0:
+    #     target_df = pd.concat([target_df] * (augmentation_size + 1))
+    #     variety_df = pd.concat([variety_df] * (augmentation_size + 1))
+
     img_idx = ['Image'+ s.split("_")[1].split(".")[0] for s in input_fnames]
     target_df = target_df.loc[img_idx, :]
     variety_df = variety_df.loc[img_idx, :]
+    
     output_labels = target_df.values
 
+    # print(len(output_labels))
     variety = variety_df['variety']
 
     idx = natsort.index_natsorted(input_fnames)
@@ -50,18 +63,19 @@ def train(args):
     input_fnames = np.array(natsort.order_by_index(input_fnames, idx))
     input_images = np.array(natsort.order_by_index(input_images, idx))
 
+
     transform = transforms.Compose([ToTensor()])
 
-    # kf = StratifiedKFold(fold_size, True, random_state=1004)
-    kf = KFold(fold_size, True, random_state=3101)
+    kf = StratifiedKFold(fold_size, True, random_state=1004)
+    # kf = KFold(fold_size, True, random_state=1004)
     fold = 0
     fold_val_set = []
     isTrain = True if args.trainmode == 'train' else False
 
     print("Train mode {}".format(isTrain))
 
-    # for train_idx, val_idx in kf.split(output_labels, variety):
-    for train_idx, val_idx in kf.split(output_labels):
+    for train_idx, val_idx in kf.split(output_labels, variety):
+    # for train_idx, val_idx in kf.split(output_labels):
         fold += 1
         
         image_train, image_val = input_images[train_idx], input_images[val_idx]
