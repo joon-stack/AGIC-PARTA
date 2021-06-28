@@ -12,13 +12,7 @@ def augment(roi, fname, size):
     augmented_fnames = []
     for n in range(size):
         for src, f in zip(roi, fname):
-            p = np.random.rand(1)
-            if p < 0.33:
-                angle = 90
-            elif p < 0.66:
-                angle = 180
-            else:
-                angle = 270
+            angle = 90 * (n + 1)
             h, w = src.shape[:2]
             rotation = cv2.getRotationMatrix2D((w/2, h/2), angle, 1)
             dst = cv2.warpAffine(src, rotation, (w, h), borderValue=[0, 0, 0, 0])
