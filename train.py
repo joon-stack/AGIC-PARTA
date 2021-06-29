@@ -66,16 +66,16 @@ def train(args):
 
     transform = transforms.Compose([ToTensor()])
 
-    kf = StratifiedKFold(fold_size, True, random_state=1004)
-    # kf = KFold(fold_size, True, random_state=1004)
+    # kf = StratifiedKFold(fold_size, True, random_state=1004)
+    kf = KFold(fold_size, True, random_state=1004)
     fold = 0
     fold_val_set = []
     isTrain = True if args.trainmode == 'train' else False
 
     print("Train mode {}".format(isTrain))
 
-    for train_idx, val_idx in kf.split(output_labels, variety):
-    # for train_idx, val_idx in kf.split(output_labels):
+    # for train_idx, val_idx in kf.split(output_labels, variety):
+    for train_idx, val_idx in kf.split(output_labels):
         fold += 1
         
         image_train, image_val = input_images[train_idx], input_images[val_idx]

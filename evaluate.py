@@ -114,7 +114,7 @@ def evaluate(args):
 def parse_args():
     parser = argparse.ArgumentParser(description="AGIC-PART A", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--model_name", default='best', type=str, dest="model_name") 
-    parser.add_argument("--answer", default=0, type=int, dest="answer")
+    parser.add_argument("--answer", default=1, type=int, dest="answer")
 
     return parser.parse_args()
 

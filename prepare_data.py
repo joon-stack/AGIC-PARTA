@@ -16,7 +16,6 @@ def augment(roi, fname, size):
             h, w = src.shape[:2]
             rotation = cv2.getRotationMatrix2D((w/2, h/2), angle, 1)
             dst = cv2.warpAffine(src, rotation, (w, h), borderValue=[0, 0, 0, 0])
-
             q = np.random.rand(1)
             if q < 0.5:
                 dst = cv2.flip(dst, 1)
@@ -70,8 +69,6 @@ def prepare_data(mode, augmentation_size=0):
     input_depth_path = natsort.order_by_index(input_depth_path, depth_idx)
     input_depth_fname = natsort.order_by_index(input_depth_fname, depth_idx)
 
-
-
     for fname, fname_d, savename, savename_d in zip(input_rgb_path, input_depth_path, input_rgb_fname, input_depth_fname):
         # Get RGB image and depth image simultaneously
         src = cv2.imread(fname)
@@ -113,6 +110,15 @@ def prepare_data(mode, augmentation_size=0):
         roi_m = np.concatenate((roi, roi_d), axis=2)
         # roi_m = roi
         roi_m = cv2.resize(roi_m, (256, 256))
+
+        # print(fname)
+        num = int(fname.split("/")[-1].split(".")[0].split("_")[1])
+        # print(num)
+
+        # if num < 20:
+        #     M = np.float32([[1, 0, -50], [0, 1, 0]])
+        #     h, w = roi_m.shape[:2]
+        #     roi_m = cv2.warpAffine(roi_m, M, (w, h))
         # roi_m = roi
         # roi_m.resize((256, 256, 3))
         # src_d = np.interp(src_d, [0, roi_d.max()], [0, 255]).astype('uint8')
