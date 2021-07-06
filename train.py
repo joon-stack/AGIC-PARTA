@@ -15,10 +15,20 @@ from sklearn.model_selection import StratifiedKFold
 from dataset import *
 from prepare_data import *
 from copy import copy
+from evaluate import * 
 import time
+
 
 import warnings
 warnings.filterwarnings('ignore')
+
+class EvalArgs():
+    def __init__(self, model_name, model, answer=1, verbose=0, write_json=0):
+        self.model_name = model_name
+        self.model = model
+        self.answer = answer
+        self.verbose = verbose
+        self.write_json = write_json
 
 def train(args):
     model_ckpt = './models/param.data'
@@ -26,6 +36,8 @@ def train(args):
 
     fold_size = args.fold_size
     earlyStoppingThres = 20
+
+    answer = args.answer
 
     augmentation_size = args.augmentation
 
@@ -77,6 +89,8 @@ def train(args):
     # for train_idx, val_idx in kf.split(output_labels, variety):
     for train_idx, val_idx in kf.split(output_labels):
         fold += 1
+
+        print("Current fold: ", str(fold))
         
         image_train, image_val = input_images[train_idx], input_images[val_idx]
         label_train, label_val = output_labels[train_idx], output_labels[val_idx]
@@ -95,6 +109,7 @@ def train(args):
 
         fold_val_set.append((image_val, label_val))
 
+
         if isTrain:
             earlyStoppingCount = 0
 
@@ -103,12 +118,12 @@ def train(args):
             dataset_val = CustomDataset(image_val, label_val, transform=transform)
             loader_val = DataLoader(dataset_val, batch_size=num_val, shuffle=True, collate_fn=dataset_val.custom_collate_fn, num_workers=8)
 
-            model = models.resnet152(pretrained=True)
+            model = models.resnet18(pretrained=True)
             # for param in model.parameters():
             #     param.requires_grad = False
             model.conv1 = nn.Conv2d(4, 64, kernel_size=7, stride=2, padding=3, bias=False)
-            model.fc = nn.Linear(2048, 5, bias=True)
-            model.fc.register_forward_hook(lambda m, inp, out: F.dropout(out, p=0.05, training=m.training))
+            model.fc = nn.Linear(512, 5, bias=True)
+            # model.fc.register_forward_hook(lambda m, inp, out: F.dropout(out, p=0.05, training=m.training))
 
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             # device = torch.device('cpu')
@@ -122,6 +137,7 @@ def train(args):
 
             best_epoch = 0
             val_loss_save = np.array(np.inf)
+            nmse_save = np.inf
 
             for epoch in range(args.epochs):
                 model.train()
@@ -156,22 +172,33 @@ def train(args):
                     val_loss_tmp = loss.item()
 
                     earlyStoppingCount += 1
-                    if val_loss_tmp < val_loss_save:
+
+                    eval_args = EvalArgs("param{}".format(fold), model)
+
+                    nmse_tmp = evaluate(eval_args)
+
+                    # if val_loss_tmp < val_loss_save:
+                    #     earlyStoppingCount = 0
+                    #     best_epoch = epoch
+                    #     val_loss_save = copy(val_loss_tmp)
+                    #     torch.save(model.state_dict(), './models/param{}.data'.format(fold))
+                    if nmse_tmp < nmse_save:
                         earlyStoppingCount = 0
                         best_epoch = epoch
-                        val_loss_save = copy(val_loss_tmp)
+                        nmse_save = copy(nmse_tmp)
                         torch.save(model.state_dict(), './models/param{}.data'.format(fold))
 
                         print(".......model updated (epoch = ", epoch+1, ")")
-                    print("epoch: %04d / %04d | train loss: %.5f | validation loss: %.5f" %
-                    (epoch+1, args.epochs, np.mean(train_loss), np.mean(val_loss) ))
+                    print("epoch: %04d / %04d | train loss: %.5f | validation loss: %.5f | NMSE: %.5f" %
+                    (epoch+1, args.epochs, np.mean(train_loss), np.mean(val_loss), nmse_tmp ))
                     if earlyStoppingCount > earlyStoppingThres:
                         print("Early stopped")
                         break
 
             print("Model with the best validation accuracy is saved.")
             print("Best epoch: ", best_epoch)
-            print("Best validation loss: ", val_loss_save)
+            # print("Best validation loss: ", val_loss_save)
+            print("Best NMSE: ", nmse_save)
             print("Done.")
 
     return fold_val_set
