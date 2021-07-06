@@ -12,14 +12,15 @@ def augment(roi, fname, size):
     augmented_fnames = []
     for n in range(size):
         for src, f in zip(roi, fname):
-            angle = 90 * (n + 1)
+            p = np.random.rand(1) * 2 - 1
+            angle = int(30 * p)
             h, w = src.shape[:2]
             rotation = cv2.getRotationMatrix2D((w/2, h/2), angle, 1)
             dst = cv2.warpAffine(src, rotation, (w, h), borderValue=[0, 0, 0, 0])
             q = np.random.rand(1)
-            if q < 0.5:
+            if q < 0.33:
                 dst = cv2.flip(dst, 1)
-            else:
+            elif q < 0.66:
                 dst = cv2.flip(dst, 0)
             f = 'a{}'.format(n) + f
             augmented_images.append(dst)
@@ -34,9 +35,11 @@ def prepare_data(mode, augmentation_size=0):
     if mode == 'train':
         p = './data'
         needAugment = True
+        verbose = True
     elif mode == 'evaluate':
         p = './evaluation'
         needAugment = False
+        verbose = False
 
     input_rgb_path = []
     input_depth_path = []
@@ -58,8 +61,9 @@ def prepare_data(mode, augmentation_size=0):
                 input_depth_fname.append(f)
                 input_depth_path.append(os.path.join(path, f))
 
-    print("Got {} RGB images".format(len(input_rgb_path)))
-    print("Got {} depth images".format(len(input_depth_path)))
+    if verbose:
+        print("Got {} RGB images".format(len(input_rgb_path)))
+        print("Got {} depth images".format(len(input_depth_path)))
 
     rgb_idx = natsort.index_natsorted(input_rgb_fname)
     depth_idx = natsort.index_natsorted(input_depth_fname)
@@ -139,7 +143,8 @@ def prepare_data(mode, augmentation_size=0):
         lettuce_rgb_roi.extend(augmented_images)
         lettuce_rgb_fnames.extend(augmented_fnames)
 
-    print("Image prepared! ")
+    if verbose:
+        print("Image prepared! ")
 
     return lettuce_rgb_roi, lettuce_rgb_fnames
 

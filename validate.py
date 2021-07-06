@@ -31,9 +31,9 @@ def validate(fold_val_set):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('Current device:', device)
 
-    model = models.resnet152(pretrained=True)
+    model = models.resnet18(pretrained=True)
     model.conv1 = nn.Conv2d(4, 64, kernel_size=7, stride=2, padding=3, bias=False)
-    model.fc = nn.Linear(2048, 5, bias=True)
+    model.fc = nn.Linear(512, 5, bias=True)
 
     for n in range(fold_size):
         model_ckpt = './models/param{}.data'.format(n+1)

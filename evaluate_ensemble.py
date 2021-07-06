@@ -20,7 +20,7 @@ from copy import copy
 
 import time
 
-def evaluate(args):
+def evaluate_ensemble(args):
     
     model_name = args.model_name
     answer = args.answer
@@ -56,9 +56,14 @@ def evaluate(args):
         print('Current device:', device)
 
     if write_json > 0:
-        model = models.resnet18(pretrained=False)
-        model.conv1 = nn.Conv2d(4, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        model.fc = nn.Linear(512, 5, bias=True)
+        model_lst = []
+        for i in range(10):
+            model = models.resnet18()
+            model_lst.append(model)
+        model = EnsembleModel(model_lst, 5)
+        # model = models.resnet18(pretrained=False)
+        # model.conv1 = nn.Conv2d(4, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        # model.fc = nn.Linear(512, 5, bias=True)
         if model_ckpt:
             state_dict = torch.load(model_ckpt)
             state_dict = {m.replace('module.', '') : i for m, i in state_dict.items()}
@@ -66,8 +71,6 @@ def evaluate(args):
 
     transform = transforms.Compose([ToTensor()])
 
-    
-    
     
     with torch.no_grad():
         model.eval()
